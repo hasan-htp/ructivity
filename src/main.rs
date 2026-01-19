@@ -1,6 +1,3 @@
-use chrono::Utc;
-use evdev::{Device, InputEventKind, Key};
-
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -8,10 +5,11 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::thread;
 
-struct Entry {
-    key : Key,
-    time_stamp : String, //TODO: use a struct and format it in log_writer_thread
-}
+
+mod event_listner;
+
+use crate::event_listner::event_listner;
+use crate::event_listner::Entry;
 
 fn main() -> std::io::Result<()>{
     let args: Vec<String> = env::args().collect();
@@ -21,43 +19,13 @@ fn main() -> std::io::Result<()>{
     }
 
     let inputpath = &args[1];
-    let mut device = Device::open(inputpath)?;
-
     let outputpath = &args[2];
+    
     let mut log_file = File::create(outputpath)?;
     
     let (tx,rx): (Sender<Entry>, Receiver<Entry>) = mpsc::channel();
 
-    let key_event_thread = thread::spawn(move ||  -> std::io::Result<()> {
-        loop {
-            let events = match device.fetch_events() {
-                Ok(ev) => ev,
-                Err(e) => {
-                    eprintln!("fetch_events failed: {}", e);
-                    break Err(e) ;
-                }
-            };
-
-            for ev in events {
-                if let InputEventKind::Key(key) = ev.kind() {
-                    // let's print only when a key released (1 on pressed, 0 on released)
-                    if ev.value() == 0 {
-                        let utc_now: chrono::DateTime<Utc>= Utc::now();
-                        let entry = Entry{
-                            key: key,
-                            time_stamp: format!("{}",utc_now.format("%Y-%m-%d %H:%M:%S.%6f")),
-                        };
-                        match tx.send(entry) {
-                            Ok(()) => {}
-                            Err(e) => {
-                                eprintln!("failed to send: {}",e);
-                            }
-                        }                    
-                    }
-                }
-            }
-        }
-    });
+    let key_event_thread = event_listner(inputpath,tx);
 
     let log_writer_thread = thread::spawn(move || -> std::io::Result<()> {
         loop {
@@ -74,7 +42,7 @@ fn main() -> std::io::Result<()>{
         }
     });
 
-    match key_event_thread.join() {
+    match key_event_thread?.join() {
         Ok(_) => println!("key_event_thread ok"),
         Err(e) => eprintln!("key_event_thread panicked: {:?}", e),
     }
