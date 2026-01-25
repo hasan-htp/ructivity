@@ -50,10 +50,14 @@ pub fn event_listener(
 ) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
 
     let keyboards = get_keyboards(EVDEV_INPUT_PATH)?;
+    println!("{} keyboard evdev found:", keyboards.len());
     let mut handles = Vec::new();
 
     for mut dev in keyboards {
 
+        let dev_name = dev.name().unwrap_or("unknown").to_string();
+        println!("device name:{}", dev_name);
+        
         let tx = tx.clone();
         let handle = thread::spawn(move || -> std::io::Result<()> {
             loop {
