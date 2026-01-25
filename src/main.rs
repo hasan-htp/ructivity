@@ -5,27 +5,25 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::thread;
 
+mod event_listener;
 
-mod event_listner;
-
-use crate::event_listner::event_listner;
-use crate::event_listner::Entry;
+use crate::event_listener::event_listener;
+use crate::event_listener::Entry;
 
 fn main() -> std::io::Result<()>{
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        println!("Usage: cargo run <input_device_path> <output_log_file_path_to_create>");
+    if args.len() != 2 {
+        println!("Usage: cargo run <output_log_file_path_to_create>");
         return Ok(());
     }
 
-    let inputpath = &args[1];
-    let outputpath = &args[2];
+    let outputpath = &args[1];
     
     let mut log_file = File::create(outputpath)?;
     
     let (tx,rx): (Sender<Entry>, Receiver<Entry>) = mpsc::channel();
 
-    let key_event_thread = event_listner(inputpath,tx);
+    let key_event_threads = event_listener(tx)?;
 
     let log_writer_thread = thread::spawn(move || -> std::io::Result<()> {
         loop {
@@ -42,9 +40,11 @@ fn main() -> std::io::Result<()>{
         }
     });
 
-    match key_event_thread?.join() {
-        Ok(_) => println!("key_event_thread ok"),
-        Err(e) => eprintln!("key_event_thread panicked: {:?}", e),
+    for (i, handle) in key_event_threads.into_iter().enumerate() {
+        match handle.join() {
+            Ok(_) => println!("key_event_thread {} ok", i),
+            Err(e) => eprintln!("key_event_thread {} panicked: {:?}", i, e),
+        }
     }
 
     match log_writer_thread.join() {
