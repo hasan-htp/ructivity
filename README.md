@@ -16,5 +16,5 @@ groups
 run the program (example)
 
 ```
-cargo run "/dev/input/by-id/usb-SteelSeries_SteelSeries_Apex_5-event-kbd" "test_output.log"
+cargo run "test_output.log"
 ```
