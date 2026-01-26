@@ -1,29 +1,26 @@
-use std::thread::{self, JoinHandle};
-use evdev::{Device, InputEventKind, Key};
 use chrono::Utc;
-use std::sync::mpsc::{Sender};
+use evdev::{Device, InputEventKind, Key};
 use std::fs;
+use std::sync::mpsc::Sender;
+use std::thread::{self, JoinHandle};
 
 const EVDEV_INPUT_PATH: &str = "/dev/input/";
 
 pub struct Entry {
-    pub key : Key,
-    pub time_stamp : String, //TODO: use a struct and format it in log_writer_thread
+    pub key: Key,
+    pub time_stamp: String, //TODO: use a struct and format it in log_writer_thread
 }
 
 fn is_keyboard(dev: &Device) -> bool {
-    if let Some(keys) = dev.supported_keys() { 
-        let required_keys = [
-            Key::KEY_ENTER,
-            Key::KEY_SPACE,
-        ];
+    if let Some(keys) = dev.supported_keys() {
+        let required_keys = [Key::KEY_ENTER, Key::KEY_SPACE];
         return required_keys.iter().all(|k| keys.contains(*k));
     }
     false
 }
 
 fn is_mouse(dev: &Device) -> bool {
-    if let Some(relatic_axis) = dev.supported_relative_axes() { 
+    if let Some(relatic_axis) = dev.supported_relative_axes() {
         return true;
     }
     false
@@ -52,19 +49,15 @@ fn get_keyboards(inputpath: &str) -> std::io::Result<Vec<Device>> {
     Ok(keyboards)
 }
 
-pub fn event_listener(
-    tx: Sender<Entry>,
-) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
-
+pub fn event_listener(tx: Sender<Entry>) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
     let keyboards = get_keyboards(EVDEV_INPUT_PATH)?;
     println!("{} keyboard evdev found:", keyboards.len());
     let mut handles = Vec::new();
 
     for mut dev in keyboards {
-
         let dev_name = dev.name().unwrap_or("unknown").to_string();
         println!("device name:{}", dev_name);
-        
+
         let tx = tx.clone();
         let handle = thread::spawn(move || -> std::io::Result<()> {
             loop {
