@@ -12,12 +12,19 @@ pub struct Entry {
 }
 
 fn is_keyboard(dev: &Device) -> bool {
-   if let Some(keys) = dev.supported_keys() { 
-      let required_keys = [
+    if let Some(keys) = dev.supported_keys() { 
+        let required_keys = [
             Key::KEY_ENTER,
             Key::KEY_SPACE,
         ];
         return required_keys.iter().all(|k| keys.contains(*k));
+    }
+    false
+}
+
+fn is_mouse(dev: &Device) -> bool {
+    if let Some(relatic_axis) = dev.supported_relative_axes() { 
+        return true;
     }
     false
 }
