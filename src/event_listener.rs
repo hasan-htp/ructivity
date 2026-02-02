@@ -22,9 +22,13 @@ fn is_keyboard(dev: &Device) -> bool {
 fn is_mouse(dev: &Device) -> bool {
     if let Some(axes) = dev.supported_relative_axes() {
         let required_axes = [RelativeAxisCode::REL_X, RelativeAxisCode::REL_Y];
-        return required_axes.iter().all(|k| axes.contains(*k));
+        if required_axes.iter().all(|k| axes.contains(*k)) {
+            if let Some(keys) = dev.supported_keys() {
+                let required_keys = [KeyCode::BTN_LEFT, KeyCode::BTN_RIGHT];
+                return required_keys.iter().all(|k| keys.contains(*k));
+            }
+        }
     }
-    // TODO add buttons
     false
 }
 
@@ -88,7 +92,7 @@ pub fn event_listener(tx: Sender<Entry>) -> std::io::Result<Vec<JoinHandle<std::
                             if value == 0 {
                                 let utc_now = Utc::now();
                                 let entry = Entry {
-                                    key: key, 
+                                    key: key,
                                     time_stamp: utc_now.format("%Y-%m-%d %H:%M:%S.%6f").to_string(),
                                 };
 
