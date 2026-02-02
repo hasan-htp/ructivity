@@ -8,7 +8,7 @@ use std::thread;
 mod event_listener;
 
 use crate::event_listener::event_listener;
-use crate::event_listener::Entry;
+use crate::event_listener::KeyEvent;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -21,7 +21,7 @@ fn main() -> std::io::Result<()> {
 
     let mut log_file = File::create(outputpath)?;
 
-    let (tx, rx): (Sender<Entry>, Receiver<Entry>) = mpsc::channel();
+    let (tx, rx): (Sender<KeyEvent>, Receiver<KeyEvent>) = mpsc::channel();
 
     let key_event_threads = event_listener(tx)?;
 

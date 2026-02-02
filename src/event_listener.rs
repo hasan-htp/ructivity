@@ -6,9 +6,14 @@ use std::thread::{self, JoinHandle};
 
 const EVDEV_INPUT_PATH: &str = "/dev/input/";
 
-pub struct Entry {
+pub struct KeyEvent {
     pub key: KeyCode,
-    pub time_stamp: String, //TODO: use a struct and format it in log_writer_thread
+    pub time_stamp: String,
+}
+
+pub struct AxisEvent {
+    pub key: RelativeAxisCode,
+    pub time_stamp: String,
 }
 
 fn is_keyboard(dev: &Device) -> bool {
@@ -58,22 +63,24 @@ where
     Ok(devices)
 }
 
-pub fn event_listener(tx: Sender<Entry>) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
+pub fn event_listener(
+    tx: Sender<KeyEvent>,
+) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
     let keyboards = get_devices(is_keyboard, EVDEV_INPUT_PATH)?;
     println!("{} keyboard evdev found", keyboards.len());
 
     let mice = get_devices(is_mouse, EVDEV_INPUT_PATH)?;
     println!("{} mouse evdev found", mice.len());
-    for dev in mice {
-        let dev_name = dev.name().unwrap_or("unknown").to_string();
-        println!("mouse device name{}", dev_name);
-    }
+
+    let mut devices = keyboards;
+    devices.extend(mice);
 
     let mut handles = Vec::new();
 
-    for mut dev in keyboards {
+    for mut dev in devices {
         let dev_name = dev.name().unwrap_or("unknown").to_string();
-        println!("keyboard device name:{}", dev_name);
+
+        println!("device name:{}", dev_name);
 
         let tx = tx.clone();
         let handle = thread::spawn(move || -> std::io::Result<()> {
@@ -91,7 +98,7 @@ pub fn event_listener(tx: Sender<Entry>) -> std::io::Result<Vec<JoinHandle<std::
                         EventSummary::Key(_keyevent, key, value) => {
                             if value == 0 {
                                 let utc_now = Utc::now();
-                                let entry = Entry {
+                                let entry = KeyEvent {
                                     key: key,
                                     time_stamp: utc_now.format("%Y-%m-%d %H:%M:%S.%6f").to_string(),
                                 };
