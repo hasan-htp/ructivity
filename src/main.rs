@@ -4,12 +4,12 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 
 mod event_listener;
-mod key_logger;
+mod event_logger;
 
 use crate::event_listener::event_listener;
 use crate::event_listener::Event;
 
-use crate::key_logger::key_logger;
+use crate::event_logger::event_logger;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -34,7 +34,7 @@ fn main() -> std::io::Result<()> {
 
     let key_event_threads = event_listener(tx);
 
-    let log_writer_thread = key_logger(rx, keyboard_log_file, mouse_log_file);
+    let log_writer_thread = event_logger(rx, keyboard_log_file, mouse_log_file);
 
     for handle in key_event_threads.into_iter() {
         let id = handle.thread().id();

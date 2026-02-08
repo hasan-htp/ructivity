@@ -4,7 +4,7 @@ use std::io::Write;
 use std::sync::mpsc::Receiver;
 use std::thread::{self, JoinHandle};
 
-pub fn key_logger(
+pub fn event_logger(
     rx: Receiver<Event>,
     mut keyboard_log_file: File,
     mut mouse_log_file_opt: Option<File>,
