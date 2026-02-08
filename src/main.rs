@@ -13,20 +13,28 @@ use crate::key_logger::key_logger;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: cargo run <output_log_file_path_to_create>");
+    if args.len() != 2 && args.len() != 3 {
+        println!("Usage: cargo run <keyboard_output_log_file_path_to_create> [mouse_output_log_file_path_to_create]");
         return Ok(());
     }
 
-    let outputpath = &args[1];
+    let keyborad_outputpath = &args[1];
 
-    let log_file = File::create(outputpath)?;
+    let keyboard_log_file = File::create(keyborad_outputpath)?;
+
+    let mouse_log_file: Option<File>;
+    if args.len() > 2 {
+        let mouse_outputpath = &args[2];
+        mouse_log_file = Some(File::create(mouse_outputpath)?);
+    } else {
+        mouse_log_file = None;
+    }
 
     let (tx, rx): (Sender<Event>, Receiver<Event>) = mpsc::channel();
 
     let key_event_threads = event_listener(tx);
 
-    let log_writer_thread = key_logger(rx, log_file);
+    let log_writer_thread = key_logger(rx, keyboard_log_file, mouse_log_file);
 
     for handle in key_event_threads.into_iter() {
         let id = handle.thread().id();

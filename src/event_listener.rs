@@ -109,6 +109,7 @@ pub fn event_listener(tx: Sender<Event>) -> Vec<JoinHandle<std::io::Result<()>>>
                                 }
                             }
                         }
+                        //Note: touchpad is not RelativeAxis event, consider adding AbsoluteAxis events too
                         EventSummary::RelativeAxis(_, _, _) => {
                             let utc_now = Utc::now();
                             let entry = MouseEvent {
