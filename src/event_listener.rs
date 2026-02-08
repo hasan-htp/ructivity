@@ -11,10 +11,14 @@ pub struct KeyEvent {
     pub time_stamp: String,
 }
 
-// pub struct AxisEvent {
-//     pub key: RelativeAxisCode,
-//     pub time_stamp: String,
-// }
+// for mouse events, i don't care about the nature of the movment, time_stamp is enough
+pub struct MouseEvent {
+    pub time_stamp: String,
+}
+pub enum Event {
+    Key(KeyEvent),
+    Mouse(MouseEvent),
+}
 
 fn is_keyboard(dev: &Device) -> bool {
     if let Some(keys) = dev.supported_keys() {
@@ -63,7 +67,7 @@ where
     Ok(devices)
 }
 
-pub fn event_listener(tx: Sender<KeyEvent>) -> Vec<JoinHandle<std::io::Result<()>>> {
+pub fn event_listener(tx: Sender<Event>) -> Vec<JoinHandle<std::io::Result<()>>> {
     let keyboards = get_devices(is_keyboard, EVDEV_INPUT_PATH).unwrap_or_default();
     println!("{} keyboard evdev found", keyboards.len());
 
@@ -93,20 +97,27 @@ pub fn event_listener(tx: Sender<KeyEvent>) -> Vec<JoinHandle<std::io::Result<()
 
                 for ev in events {
                     match ev.destructure() {
-                        EventSummary::Key(_keyevent, key, value) => {
+                        EventSummary::Key(_, key, value) => {
                             if value == 0 {
                                 let utc_now = Utc::now();
                                 let entry = KeyEvent {
                                     key: key,
                                     time_stamp: utc_now.format("%Y-%m-%d %H:%M:%S.%6f").to_string(),
                                 };
-
-                                if let Err(e) = tx.send(entry) {
+                                if let Err(e) = tx.send(Event::Key(entry)) {
                                     eprintln!("failed to send: {}", e);
                                 }
                             }
                         }
-                        // TODO add relative movements etc.
+                        EventSummary::RelativeAxis(_, _, _) => {
+                            let utc_now = Utc::now();
+                            let entry = MouseEvent {
+                                time_stamp: utc_now.format("%Y-%m-%d %H:%M:%S.%6f").to_string(),
+                            };
+                            if let Err(e) = tx.send(Event::Mouse(entry)) {
+                                eprintln!("failed to send: {}", e);
+                            }
+                        }
                         _ => {}
                     }
                 }
