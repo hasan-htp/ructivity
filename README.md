@@ -13,8 +13,10 @@ check groups
 groups
 ```
 
+Usage: cargo run <keyboard_output_log_file_path_to_create> [mouse_output_log_file_path_to_create]
+
 run the program (example)
 
 ```
-cargo run "test_output.log"
+cargo run "keyboard.log" "mouse.log"
 ```
