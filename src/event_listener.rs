@@ -11,10 +11,10 @@ pub struct KeyEvent {
     pub time_stamp: String,
 }
 
-pub struct AxisEvent {
-    pub key: RelativeAxisCode,
-    pub time_stamp: String,
-}
+// pub struct AxisEvent {
+//     pub key: RelativeAxisCode,
+//     pub time_stamp: String,
+// }
 
 fn is_keyboard(dev: &Device) -> bool {
     if let Some(keys) = dev.supported_keys() {
@@ -63,13 +63,11 @@ where
     Ok(devices)
 }
 
-pub fn event_listener(
-    tx: Sender<KeyEvent>,
-) -> std::io::Result<Vec<JoinHandle<std::io::Result<()>>>> {
-    let keyboards = get_devices(is_keyboard, EVDEV_INPUT_PATH)?;
+pub fn event_listener(tx: Sender<KeyEvent>) -> Vec<JoinHandle<std::io::Result<()>>> {
+    let keyboards = get_devices(is_keyboard, EVDEV_INPUT_PATH).unwrap_or_default();
     println!("{} keyboard evdev found", keyboards.len());
 
-    let mice = get_devices(is_mouse, EVDEV_INPUT_PATH)?;
+    let mice = get_devices(is_mouse, EVDEV_INPUT_PATH).unwrap_or_default();
     println!("{} mouse evdev found", mice.len());
 
     let mut devices = keyboards;
@@ -118,5 +116,5 @@ pub fn event_listener(
         handles.push(handle);
     }
 
-    Ok(handles)
+    handles
 }
